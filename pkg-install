@@ -39,18 +39,23 @@ __pkg_uninstall_pkg()
   do
     if ! pkgutil --file-info "${_file}" | grep "^pkgid: " | grep -v ${_package} >/dev/null
     then
-      rm -rf "${_file}"
-      printf "."
+      rm -rf "${_file}" && printf "." || {
+        printf "E"
+        printf "Can not remove ${_file}\n" >> uninstall_${_package}.log
+      }
     fi
   done < <(pkgutil --files ${_package})
+  printf "\n"
   pkgutil --forget ${_package}
-  printf " done.\n"
 }
 
 __pkg_build_uninstaller()
 {
   {
     printf "#!/usr/bin/env bash\n\n"
+    if ! (( UID ))
+    then printf "if (( UID )) ; then printf \"pkg_uninstaller: Must be run as root to uninstall this package.\\\n\"; exit 1; fi";
+    fi
     __pkg_extract_function __pkg_uninstall_pkg
     printf "\nprintf 'Uninstalling $1\\\n'\n\n"
     awk '{print "__pkg_uninstall_pkg "$1;}' < ${pkg_list_prefix}_new
