@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+
+: \
+  TMPDIR:${TMPDIR:=/tmp}: \
+  pkg_list_prefix:${pkg_list_prefix:=${TMPDIR}/.pkg_list}:
+
+__pkg_extract_function()
+{
+  type $1 | sed '1 d; 2 s/ //;'
+}
+
+__pkg_list()
+{
+  pkgutil --pkgs
+}
+
+__pkg_install_before()
+{
+  __pkg_list > ${pkg_list_prefix}_before
+}
+
+__pkg_install_after()
+{
+  __pkg_list > ${pkg_list_prefix}_after
+
+  diff --normal ${pkg_list_prefix}_before ${pkg_list_prefix}_after |
+    awk '/^>/{print $2}' > ${pkg_list_prefix}_new
+
+  rm ${pkg_list_prefix}_before ${pkg_list_prefix}_after
+}
+
+__pkg_uninstall_pkg()
+{
+  typeset _file _package
+  _package=$1
+
+  while read _file
+  do
+    if ! pkgutil --file-info "${_file}" | grep "^pkgid: " | grep -v ${_package} >/dev/null
+    then
+      rm -rf "${_file}"
+    fi
+  done < <(pkgutil --files ${_package})
+}
+
+__pkg_build_uninstaller()
+{
+  {
+    printf "#!/usr/bin/env bash\n\n"
+    __pkg_extract_function __pkg_uninstall_pkg
+    printf "\nprintf 'Uninstalling $1\\n'\n\n"
+    awk 'print "__pkg_uninstall_pkg $1"' < ${pkg_list_prefix}_new
+    printf "\n\nprintf 'Uninstalled $1\\n'\n"
+  } > $2
+  chmod +x $2
+}
+
+__pkg_install_file()
+{
+  __pkg_install_before
+  installer -pkg $1 -target /
+  __pkg_install_after
+  __pkg_build_uninstaller $1 $2
+}
+
+__pkg_install_self()
+{
+  (
+    typeset _path
+    if (( UID ))
+    then _path="$HOME/.pkg_uninstaller"
+    else _path="/opt/pkg_uninstaller"
+    fi
+
+    mkdir -p "${_path}" && printf "Installing to ${_path}\n" || { 
+      printf "Can not create ${_path}\n"
+      return 1
+    }
+    cd "${_path}"
+
+    curl -L https://github.com/mpapis/pkg_uninstaller/tarball/master -o package.tgz || {
+      printf "Can not download package.\n"
+      return 2
+    }
+
+    tar xzf package.tgz || {
+      printf "Can not extract package.\n"
+      return 3
+    }
+    rm -f package.tgz
+
+    printf "
+Thank you for using pkg_uninstaller.
+Now add ${_path} to your PATH.
+ ~Michal
+"
+  )
+}
+
+case $(basename $0) in
+  (*sh)
+    __pkg_install_self "$@"
+    ;;
+  (pkg-list)
+    if [[ -n "$1" ]]
+    then
+      __pkg_list | grep "$1"
+    else
+      __pkg_list
+    fi
+    ;;
+  (pkg-install)
+    __pkg_install_file $1 uninstall_${1//./_}.sh
+    ;;
+  (pkg-uninstall)
+    for _pkg in $@
+    do
+      __pkg_uninstall_pkg ${_pkg}
+    done
+    ;;
+  (pkg-wrapper)
+    pkg_list_prefix=${TMPDIR}/.pkg_list_${2// /_}
+    case "$1" in
+      (before)
+        __pkg_install_before
+        ;;
+      (after)
+        __pkg_install_after
+        __pkg_build_uninstaller $2 $3
+        ;;
+    esac
+    ;;
+  (*)
+    echo "ERROR: unknown binary $0." >&2
+    exit 1
+    ;;
+esac
