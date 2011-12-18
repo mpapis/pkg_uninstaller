@@ -111,7 +111,7 @@ case $(basename $0) in
     fi
     ;;
   (pkg-install)
-    __pkg_install_file $1 uninstall_${1//./_}.sh
+    __pkg_install_file $1 uninstall_$( basename ${1//./_} ).sh
     ;;
   (pkg-uninstall)
     for _pkg in $@
