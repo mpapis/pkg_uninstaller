@@ -6,7 +6,7 @@ This software is aimed to help manage packages uninstalling in OSX.
 
 Installation is as simple as:
 
-    [sudo] bash < <(curl -sL https://raw.github.com/mpapis/pkg_uninstaller/master/pkg-installer)
+    [sudo] bash < <(curl -sL https://raw.github.com/mpapis/pkg_uninstaller/master/pkg-install)
 
 Adding to PATH, for system installation (with sudo):
 

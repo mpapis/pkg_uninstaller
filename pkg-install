@@ -87,7 +87,8 @@ __pkg_install_self()
       printf "Can not extract package.\n"
       return 3
     }
-    rm -f package.tgz
+    mv mpapis-pkg_uninstaller-*/* .
+    rm -rf package.tgz mpapis-pkg_uninstaller-*
 
     printf "
 Thank you for using pkg_uninstaller.
