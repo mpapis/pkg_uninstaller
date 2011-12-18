@@ -74,7 +74,7 @@ __pkg_build_uninstaller()
   chmod +x "${_uninstaller}"
   rm -f "${pkg_list_prefix}_new"
 
-  printf "pkg_uninstaller: Uninstaller saved to ${_uninstaller}"
+  printf "pkg_uninstaller: Uninstaller saved to ${_uninstaller}\n"
 }
 
 __pkg_install_file()
