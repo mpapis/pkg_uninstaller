@@ -6,7 +6,7 @@
 
 __pkg_extract_function()
 {
-  type $1 | sed '1 d; 2 s/ //;'
+  type "$1" | sed '1 d; 2 s/ //;'
 }
 
 __pkg_list()
@@ -16,62 +16,73 @@ __pkg_list()
 
 __pkg_install_before()
 {
-  __pkg_list > ${pkg_list_prefix}_before
+  __pkg_list > "${pkg_list_prefix}_before"
 }
 
 __pkg_install_after()
 {
-  __pkg_list > ${pkg_list_prefix}_after
+  __pkg_list > "${pkg_list_prefix}_after"
 
-  diff --normal ${pkg_list_prefix}_before ${pkg_list_prefix}_after |
-    awk '/^>/{print $2}' > ${pkg_list_prefix}_new
+  diff --normal "${pkg_list_prefix}_before" "${pkg_list_prefix}_after" |
+    awk '/^>/{print $2}' > "${pkg_list_prefix}_new"
 
-  rm ${pkg_list_prefix}_before ${pkg_list_prefix}_after
+  rm "${pkg_list_prefix}_before" "${pkg_list_prefix}_after"
 }
 
 __pkg_uninstall_pkg()
 {
   typeset _file _package
-  _package=$1
+  _package="$1"
 
   printf "Uninstalling ${_package} "
   while read _file
   do
-    if ! pkgutil --file-info "${_file}" | grep "^pkgid: " | grep -v ${_package} >/dev/null
+    if ! pkgutil --file-info "${_file}" | grep "^pkgid: " | grep -v "${_package}" >/dev/null
     then
       rm -rf "${_file}" && printf "." || {
         printf "E"
-        printf "Can not remove ${_file}\n" >> uninstall_${_package}.log
+        printf "Can not remove ${_file}\n" >> "uninstall_${_package}.log"
       }
     fi
-  done < <(pkgutil --files ${_package})
+  done < <(pkgutil --files "${_package}")
   printf "\n"
-  pkgutil --forget ${_package}
+  pkgutil --forget "${_package}"
 }
 
 __pkg_build_uninstaller()
 {
+  typeset _package _uninstaller
+  _package="$( basename "$1" )"
+  _uninstaller="$2"
   {
-    typeset _package
-    _package="$( basename $1 )"
     printf "#!/usr/bin/env bash\n\n"
+
     if ! (( UID ))
     then printf "if (( UID )) ; then printf \"pkg_uninstaller: Must be run as root to uninstall this package.\\\n\"; exit 1; fi\n\n";
     fi
+
     __pkg_extract_function __pkg_uninstall_pkg
+
     printf "\nprintf 'Uninstalling ${_package}\\\n'\n\n"
-    awk '{print "__pkg_uninstall_pkg "$1;}' < ${pkg_list_prefix}_new
+
+    awk '{print "__pkg_uninstall_pkg "$1;}' < "${pkg_list_prefix}_new"
+
     printf "\nprintf 'Uninstalled ${_package}\\\n'\n"
-  } > $2
-  chmod +x $2
+
+  } > "${_uninstaller}"
+
+  chmod +x "${_uninstaller}"
+  rm -f "${pkg_list_prefix}_new"
+
+  printf "pkg_uninstaller: Uninstaller saved to ${_uninstaller}"
 }
 
 __pkg_install_file()
 {
   __pkg_install_before
-  installer -pkg $1 -target /
+  installer -pkg "$1" -target /
   __pkg_install_after
-  __pkg_build_uninstaller $1 $2
+  __pkg_build_uninstaller "$1" "$2"
 }
 
 __pkg_install_self()
@@ -101,11 +112,10 @@ __pkg_install_self()
     mv mpapis-pkg_uninstaller-*/* .
     rm -rf package.tgz mpapis-pkg_uninstaller-*
 
-    printf "
-Thank you for using pkg_uninstaller.
-Now add ${_path} to your PATH.
- ~Michal
-"
+    printf "Thank you for using pkg_uninstaller.\n"
+    [[ ":$PATH:" =~ ":${_path}:" ]] &&
+      printf "Now add ${_path} to your PATH.\n" || true
+    printf "~Michal\n"
   )
 }
 
@@ -122,23 +132,23 @@ case $(basename $0) in
     fi
     ;;
   (pkg-install)
-    __pkg_install_file $1 uninstall_$( basename ${1//./_} ).sh
+    __pkg_install_file "$1" uninstall_$( basename ${1//./_} ).sh
     ;;
   (pkg-uninstall)
-    for _pkg in $@
+    for _pkg in "$@"
     do
       __pkg_uninstall_pkg ${_pkg}
     done
     ;;
   (pkg-wrapper)
-    pkg_list_prefix=${TMPDIR}/.pkg_list_${2// /_}
+    pkg_list_prefix="${TMPDIR}/.pkg_list_${2// /_}"
     case "$1" in
       (before)
         __pkg_install_before
         ;;
       (after)
         __pkg_install_after
-        __pkg_build_uninstaller $2 $3
+        __pkg_build_uninstaller "$2" "$3"
         ;;
     esac
     ;;
