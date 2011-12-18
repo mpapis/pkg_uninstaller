@@ -49,24 +49,25 @@ and install it to disk before executing the hook bellow.
 
 1. In before installing hook call this script:
 
+```
+#!/bin/bash
 
-    #!/bin/bash
-    
-    pkg-wrapper before "your package name"
-
+pkg-wrapper before "your package name"
+```
 
 1. In after installing hook call this script:
 
+```
+#!/bin/bash
 
-    #!/bin/bash
-    
-    pkg-wrapper before "your package name" /path/to/uninstaller_name.sh
-
+pkg-wrapper before "your package name" /path/to/uninstaller_name.sh
+```
 
 1. In uninstall hook call:
 
+```
+#!/bin/bash
 
-    #!/bin/bash
-    
-    /path/to/uninstaller_name.sh
-    rm /path/to/uninstaller_name.sh
+/path/to/uninstaller_name.sh
+rm /path/to/uninstaller_name.sh
+```
