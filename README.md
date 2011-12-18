@@ -44,10 +44,10 @@ Uninstall package:
 
 ## Using internally in package to build uninstaller
 
-1. You have to bundle `pkg-wrapper` with your application 
+- You have to bundle `pkg-wrapper` with your application 
 and install it to disk before executing the hook bellow.
 
-2. In before installing hook call this script:
+- In before installing hook call this script:
 
 ```
 #!/bin/bash
@@ -55,7 +55,7 @@ and install it to disk before executing the hook bellow.
 pkg-wrapper before "your package name"
 ```
 
-3. In after installing hook call this script:
+- In after installing hook call this script:
 
 ```
 #!/bin/bash
@@ -63,7 +63,7 @@ pkg-wrapper before "your package name"
 pkg-wrapper before "your package name" /path/to/uninstaller_name.sh
 ```
 
-4. In uninstall hook call:
+- In uninstall hook call:
 
 ```
 #!/bin/bash
