@@ -52,14 +52,16 @@ __pkg_uninstall_pkg()
 __pkg_build_uninstaller()
 {
   {
+    typeset _package
+    _package="$( basename $1 )"
     printf "#!/usr/bin/env bash\n\n"
     if ! (( UID ))
-    then printf "if (( UID )) ; then printf \"pkg_uninstaller: Must be run as root to uninstall this package.\\\n\"; exit 1; fi";
+    then printf "if (( UID )) ; then printf \"pkg_uninstaller: Must be run as root to uninstall this package.\\\n\"; exit 1; fi\n\n";
     fi
     __pkg_extract_function __pkg_uninstall_pkg
-    printf "\nprintf 'Uninstalling $1\\\n'\n\n"
+    printf "\nprintf 'Uninstalling ${_package}\\\n'\n\n"
     awk '{print "__pkg_uninstall_pkg "$1;}' < ${pkg_list_prefix}_new
-    printf "\n\nprintf 'Uninstalled $1\\\n'\n"
+    printf "\nprintf 'Uninstalled ${_package}\\\n'\n"
   } > $2
   chmod +x $2
 }
