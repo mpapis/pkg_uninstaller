@@ -113,9 +113,9 @@ __pkg_install_self()
     rm -rf package.tgz mpapis-pkg_uninstaller-*
 
     printf "Thank you for using pkg_uninstaller.\n"
-    [[ ":$PATH:" =~ ":${_path}:" ]] &&
-      printf "Now add ${_path} to your PATH.\n" || true
-    printf "~Michal\n"
+    [[ ":$PATH:" =~ ":${_path}:" ]] ||
+      printf "Now add ${_path} to your PATH.\n"
+    printf " ~Michal\n"
   )
 }
 
